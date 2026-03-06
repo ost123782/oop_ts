@@ -11,6 +11,7 @@ const reduceIterable = (iterable: Iterable<number>, reducer: (a: number, b: numb
   
   for (const value of iterator) {
     result = reducer(result, value);
+    console.log(result);
   }
   return result;
 };
