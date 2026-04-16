@@ -1,0 +1,66 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: lab67-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lab67-net
+
+  lab6:
+    build: ./lab6
+    container_name: lab67-lab6
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      LAB6_QUEUE: lab6_queue
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - lab67-net
+
+  lab7:
+    build: ./lab7
+    container_name: lab67-lab7
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      LAB7_QUEUE: lab7_queue
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - lab67-net
+
+  gateway:
+    build: ./gateway
+    container_name: lab67-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      SWAGGER_PATH: api
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      LAB6_QUEUE: lab6_queue
+      LAB7_QUEUE: lab7_queue
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      lab6:
+        condition: service_started
+      lab7:
+        condition: service_started
+    networks:
+      - lab67-net
+
+networks:
+  lab67-net:
+    driver: bridge

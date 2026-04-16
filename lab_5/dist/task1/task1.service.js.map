@@ -1,0 +1,1 @@
+{"version":3,"file":"task1.service.js","sourceRoot":"","sources":["../../src/task1/task1.service.ts"],"names":[],"mappings":";;;;;;;;;AAAA,2CAA4C;AAGrC,IAAM,YAAY,GAAlB,MAAM,YAAY;IACvB,aAAa,CAAC,CAAS,EAAE,CAAS,EAAE,CAAS;QAC3C,OAAO,CAAC,CAAC,CAAC,GAAG,CAAC,CAAC,GAAG,CAAC,CAAC,GAAG,CAAC,CAAC;IAC3B,CAAC;CACF,CAAA;AAJY,oCAAY;uBAAZ,YAAY;IADxB,IAAA,mBAAU,GAAE;GACA,YAAY,CAIxB"}
