@@ -1,0 +1,131 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: lab89-rabbitmq
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lab89-net
+
+  postgres-lab8:
+    image: postgres:16-alpine
+    container_name: lab89-postgres-lab8
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: lab8
+      POSTGRES_PASSWORD: lab8
+      POSTGRES_DB: lab8
+    volumes:
+      - lab89-pgdata-lab8:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab8 -d lab8"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - lab89-net
+
+  postgres-lab9:
+    image: postgres:16-alpine
+    container_name: lab89-postgres-lab9
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: lab9
+      POSTGRES_PASSWORD: lab9
+      POSTGRES_DB: lab9
+    volumes:
+      - lab89-pgdata-lab9:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab9 -d lab9"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - lab89-net
+
+  lab8:
+    build: ./lab8
+    container_name: lab89-lab8
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      LAB8_QUEUE: lab8_queue
+      LAB8_DATA_DIR: /data
+      DATABASE_URL: postgresql://lab8:lab8@postgres-lab8:5432/lab8?schema=public
+    volumes:
+      - ./data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres-lab8:
+        condition: service_healthy
+    networks:
+      - lab89-net
+
+  lab9:
+    build: ./lab9
+    container_name: lab89-lab9
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      LAB9_QUEUE: lab9_queue
+      DATABASE_URL: postgresql://lab9:lab9@postgres-lab9:5432/lab9?schema=public
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres-lab9:
+        condition: service_healthy
+    networks:
+      - lab89-net
+
+  gateway:
+    build: ./gateway
+    container_name: lab89-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      SWAGGER_PATH: api
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      LAB8_QUEUE: lab8_queue
+      LAB9_QUEUE: lab9_queue
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      lab8:
+        condition: service_started
+      lab9:
+        condition: service_started
+    networks:
+      - lab89-net
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:3000
+        VITE_WS_URL: http://localhost:3000
+    container_name: lab89-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - gateway
+    networks:
+      - lab89-net
+
+volumes:
+  lab89-pgdata-lab8:
+  lab89-pgdata-lab9:
+
+networks:
+  lab89-net:
+    driver: bridge
